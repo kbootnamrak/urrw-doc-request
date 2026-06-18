@@ -328,12 +328,8 @@
     // ==========================================
     // กำหนดค่า Supabase ที่นี่
     // ==========================================
-    const supabaseUrl = 'https://mpnbvhvtqyfirwfhcixx.supabase.co';
-    
-    // 👇 นำ Publishable Key มาวางในเครื่องหมายคำพูดเดี่ยวด้านล่างนี้ครับ 👇
+	const supabaseUrl = 'https://mpnbvhvtqyfirwfhcixx.supabase.co';
     const supabaseKey = 'sb_publishable_eFpCdhORdbRovhLzJeBVUQ_eQa1Wjuq'; 
-    
-    // ⚠️ แก้ชื่อตัวแปรเป็น supabaseClient ป้องกันการตั้งชื่อชนไลบรารี
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
     let globalAdminData = []; 
