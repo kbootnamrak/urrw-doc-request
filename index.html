@@ -117,7 +117,11 @@
                     <input type="number" id="qtyDocOther" name="qtyDocOther" placeholder="จำนวน" class="input-field w-full md:w-1/2">
                   </div>
                 </div>
-                <div id="otherDocFileContainer" class="mt-4 hidden"><label class="block mb-1 text-gray-700">ตัวอย่างใบรับรองอื่น ๆ (ถ้ามี)</label><input type="file" id="otherDocFile" class="input-field bg-white"></div>
+                <div id="otherDocFileContainer" class="mt-4 hidden">
+                  <label class="block mb-1 text-gray-700">ตัวอย่างใบรับรองอื่น ๆ (ถ้ามี)</label>
+                  <input type="file" id="otherDocFile" class="input-field bg-white" accept="image/*,.pdf">
+                  <span class="text-xs text-red-500 mt-1 block">* ขนาดไฟล์แนบต้องไม่เกิน 2 MB</span>
+                </div>
               </div>
             </div>
 
@@ -219,7 +223,11 @@
                     <option value="มัธยมศึกษาปีที่ 6">มัธยมศึกษาปีที่ 6</option>
                   </select>
                 </div>
-                <div class="md:col-span-2"><label class="block mb-1 text-gray-700">ใบแจ้งความ (กรณีสูญหาย)</label><input type="file" id="alumniReportFile" class="input-field bg-white"></div>
+                <div class="md:col-span-2">
+                  <label class="block mb-1 text-gray-700">ใบแจ้งความ (กรณีสูญหาย)</label>
+                  <input type="file" id="alumniReportFile" class="input-field bg-white" accept="image/*,.pdf">
+                  <span class="text-xs text-red-500 mt-1 block">* ขนาดไฟล์แนบต้องไม่เกิน 2 MB</span>
+                </div>
               </div>
             </div>
           </div>
@@ -299,8 +307,9 @@
             <table class="w-full text-sm text-left">
               <thead class="bg-red-50 text-school-red border-b-2 border-school-gold">
                 <tr>
-                  <th class="px-4 py-3 border-r">วันที่ขอ</th>
-                  <th class="px-4 py-3 border-r">รหัสนักเรียน</th>
+                  <th class="px-4 py-3 border-r text-center">วันที่ขอ</th>
+                  <th class="px-4 py-3 border-r text-center">เลข ปชช.</th>
+                  <th class="px-4 py-3 border-r text-center">รหัสนักเรียน</th>
                   <th class="px-4 py-3 border-r text-center">ระดับชั้น</th>
                   <th class="px-4 py-3 border-r">ชื่อ-สกุล</th>
                   <th class="px-4 py-3 border-r text-center">เบอร์ติดต่อ</th>
@@ -532,6 +541,15 @@
       
       if(docsList.length === 0) { Swal.fire('แจ้งเตือน', 'กรุณาเลือกเอกสารที่ต้องการอย่างน้อย 1 รายการ', 'warning'); return; }
 
+      // ระบบตรวจสอบขนาดไฟล์ไม่เกิน 2 MB
+      if (fileToUpload) {
+        const maxSize = 2 * 1024 * 1024; // 2 MB ในหน่วย Bytes
+        if (fileToUpload.size > maxSize) {
+          Swal.fire('ขนาดไฟล์เกินกำหนด', 'กรุณาแนบไฟล์รูปภาพหรือ PDF ที่มีขนาดไม่เกิน 2 MB ครับ', 'warning');
+          return;
+        }
+      }
+
       const finalDocs = docsList.join('\n');
       const pickupDate = formData.get('pickupDate') || "-";
       const phone = formData.get('phone') || "-";
@@ -540,7 +558,6 @@
       Swal.fire({ title: 'กำลังประมวลผลคำร้อง...', didOpen: () => { Swal.showLoading(); }});
 
       let fileUrl = "-";
-      // ทำกลไกการอัปโหลดไฟล์เข้า Storage
       if (fileToUpload) {
         const fileExt = fileToUpload.name.split('.').pop();
         const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
@@ -661,13 +678,14 @@
         return {
           id: item.id,
           date: formattedDate,
-          studentStatus: item.student_status, // ดึงสถานะปัจจุบัน/ศิษย์เก่า
+          citizenId: item.citizen_id || "-", // รับค่า เลข ปชช. เพิ่มเข้ามา
+          studentStatus: item.student_status, 
           studentId: item.student_id && item.student_id !== "-" ? item.student_id : "-",
           room: displayRoom,
           name: item.first_name + " " + item.last_name,
           phone: item.phone && item.phone !== "-" ? item.phone : "-",
           docType: item.requested_docs,
-          fileUrl: item.file_url || "-", // รับค่า URL ลิงก์ไฟล์แนบ
+          fileUrl: item.file_url || "-", 
           status: item.doc_status || "กำลังดำเนินการ"
         };
       });
@@ -709,26 +727,26 @@
 
     function renderAdminTable(data) {
       const tbody = document.getElementById('adminTableBody');
-      tbody.innerHTML = (data.length === 0) ? '<tr><td colspan="8" class="text-center py-10 text-gray-400">--- ไม่พบข้อมูลคำร้อง ---</td></tr>' : '';
+      // ปรับเป็น 9 คอลัมน์
+      tbody.innerHTML = (data.length === 0) ? '<tr><td colspan="9" class="text-center py-10 text-gray-400">--- ไม่พบข้อมูลคำร้อง ---</td></tr>' : '';
       data.forEach(item => {
         let tr = document.createElement('tr'); tr.className = "border-b hover:bg-red-50 transition";
         
-        // ตรวจสอบและสร้างการแสดงผลสำหรับคอลัมน์รหัสนักเรียน (แก้ไขเรื่องศิษย์เก่าไม่ขึ้น)
         let idColumnHtml = item.studentId;
         if (item.studentStatus === 'ศิษย์เก่า') {
           idColumnHtml = `<span class="px-2 py-0.5 bg-gray-100 text-gray-700 border border-gray-300 rounded text-[11px] font-bold">ศิษย์เก่า</span>`;
         }
 
-        // เพิ่มการเรียกดูไฟล์แนบถ้านักเรียนอัปโหลดมา
         let fileBtnHtml = '';
         if (item.fileUrl && item.fileUrl !== "-") {
           fileBtnHtml = `<br><a href="${item.fileUrl}" target="_blank" class="inline-block mt-1 text-blue-600 hover:text-blue-800 hover:underline font-bold text-[11px]"><i class="fas fa-paperclip"></i> เปิดดูไฟล์แนบ</a>`;
         }
 
         tr.innerHTML = `
-          <td class="px-4 py-3 border-r text-xs">${item.date}</td>
+          <td class="px-4 py-3 border-r text-xs text-center">${item.date}</td>
+          <td class="px-4 py-3 border-r font-medium text-gray-700 text-center">${item.citizenId}</td>
           <td class="px-4 py-3 border-r text-center">${idColumnHtml}</td>
-          <td class="px-4 py-3 border-r text-center">${item.room}</td>
+          <td class="px-4 py-3 border-r text-center text-xs">${item.room}</td>
           <td class="px-4 py-3 border-r font-medium">${item.name}</td>
           <td class="px-4 py-3 border-r text-center text-blue-600 font-medium whitespace-nowrap"><a href="tel:${item.phone}">${item.phone}</a></td>
           <td class="px-4 py-3 border-r whitespace-pre-line text-[11px] leading-tight text-red-900">${item.docType}${fileBtnHtml}</td>
