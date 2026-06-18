@@ -64,7 +64,7 @@
       <div id="homeView">
         <form id="docForm" onsubmit="handleFormSubmit(event)">
           <div class="max-w-md mx-auto mb-8 text-center">
-            <label class="block text-sm font-medium text-gray-700 mb-2">สถานะผู้ยื่นคำร้อง</label>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Node สถานะผู้ยื่นคำร้อง</label>
             <select id="studentStatus" name="studentStatus" onchange="toggleForm()" required class="input-field text-center bg-gray-50 border-gray-300">
               <option value="" disabled selected>-กรุณาเลือกสถานะ-</option>
               <option value="นักเรียนปัจจุบัน">นักเรียนปัจจุบัน ( กำลังศึกษาอยู่ )</option>
@@ -84,7 +84,7 @@
                 <div class="md:col-span-3"><label class="block mb-1 text-gray-700">เลขบัตร ปชช.</label><input type="text" name="citizenId" maxlength="13" class="input-field"></div>
                 <div class="md:col-span-3"><label class="block mb-1 text-gray-700">วันเกิด</label><select name="bDay" class="input-field bg-white"><option value="" disabled selected>-เลือก-</option><script>for(let i=1;i<=31;i++) document.write(`<option value="${i}">${i}</option>`);</script></select></div>
                 <div class="md:col-span-3"><label class="block mb-1 text-gray-700">เดือนเกิด</label><select name="bMonth" class="input-field bg-white"><option value="" disabled selected>-เลือก-</option><option value="มกราคม">มกราคม</option><option value="กุมภาพันธ์">กุมภาพันธ์</option><option value="มีนาคม">มีนาคม</option><option value="เมษายน">เมษายน</option><option value="พฤษภาคม">พฤษภาคม</option><option value="มิถุนายน">มิถุนายน</option><option value="กรกฎาคม">กรกฎาคม</option><option value="สิงหาคม">สิงหาคม</option><option value="กันยายน">กันยายน</option><option value="ตุลาคม">ตุลาคม</option><option value="พฤศจิกายน">พฤศจิกายน</option><option value="ธันวาคม">ธันวาคม</option></select></div>
-                <div class="md:col-span-3"><label class="block mb-1 text-gray-700">ปีเกิด</label><select name="bYear" class="input-field bg-white"><option value="" disabled selected>-เลือก-</option><script>const y=new Date().getFullYear()+543; for(let i=y;i>=y-30;i--) document.write(`<option value="${i}">${i}</option>`);</script></select></div>
+                <div class="md:col-span-3"><label class="block mb-1 text-gray-700">ปีเกิด</label><select name="bYear" class="input-field bg-white"><option value="" disabled selected>-เลือก-</option><script>const curY=new Date().getFullYear()+543; for(let i=curY;i>=curY-30;i--) document.write(`<option value="${i}">${i}</option>`);</script></select></div>
                 <div class="md:col-span-12"><label class="block mb-1 text-gray-700">โรงเรียนเดิม (ก่อนเข้าศึกษาที่ อรว.นม.)</label><input type="text" name="oldSchool" class="input-field"></div>
                 <div class="md:col-span-6"><label class="block mb-1 text-gray-700">ชื่อ - สกุล (บิดา)</label><input type="text" name="fatherName" placeholder="โปรดระบุ คำนำหน้าชื่อ" class="input-field"></div>
                 <div class="md:col-span-6"><label class="block mb-1 text-gray-700">ชื่อ - สกุล (มารดา)</label><input type="text" name="motherName" placeholder="โปรดระบุ คำนำหน้าชื่อ" class="input-field"></div>
@@ -137,6 +137,19 @@
           </div>
 
           <div id="formAlumni" class="hidden">
+            <div class="bg-amber-50 border-l-4 border-amber-500 p-4 mb-5 rounded-md text-sm text-amber-900 shadow-sm">
+              <h4 class="font-bold mb-2 flex items-center gap-2 text-amber-800"><i class="fas fa-exclamation-circle text-lg"></i> ข้อกำหนดสำคัญสำหรับศิษย์เก่าในการขอเอกสาร</h4>
+              <ol class="list-decimal pl-4 space-y-2 text-gray-800">
+                <li><strong>ใบแจ้งความ (กรณีสูญหาย):</strong> ต้องทำการถ่ายรูปหรือสแกนไฟล์เพื่ออัปโหลดเข้าสู่ระบบในช่องด้านล่าง <span class="text-red-600 font-bold">(ระบบจะบังคับแนบไฟล์ทันทีในกรณีที่ขอ ปพ.1)</span></li>
+                <li><strong>รูปถ่ายหน้าตรงจำนวน 2 รูป:</strong> สวมเสื้อเชิ้ตสีขาวสุภาพ ไม่มีตราสัญลักษณ์หรือเครื่องหมายใดๆ <span class="text-red-600 font-bold">(ให้นำมาส่งให้เจ้าหน้าที่งานทะเบียนในวันที่มารับเอกสารจริง)</span>
+                  <ul class="list-disc pl-5 mt-1 space-y-1 text-gray-700">
+                    <li>ศิษย์เก่าที่จบการศึกษาตั้งแต่ปี <strong>พ.ศ. 2548 - ปัจจุบัน</strong> : ให้ใช้รูปถ่ายขนาด <strong>1.5 นิ้ว</strong></li>
+                    <li>ศิษย์เก่าที่จบการศึกษา **ก่อนปี พ.ศ. 2548** : ให้ใช้รูปถ่ายขนาด <strong>2 นิ้ว</strong></li>
+                  </ul>
+                </li>
+              </ol>
+            </div>
+
             <div class="form-box">
               <div class="form-header"><i class="fas fa-user"></i> ข้อมูลพื้นฐานศิษย์เก่า</div>
               <div class="p-4 grid grid-cols-1 md:grid-cols-12 gap-4 text-sm">
@@ -243,7 +256,7 @@
           
           <div id="submitBtnArea" class="hidden text-center mt-6">
             <button type="submit" class="btn-school font-bold px-10 py-2.5 rounded-full shadow-lg flex items-center justify-center gap-2 mx-auto"><i class="fas fa-save"></i> ส่งคำร้องขอเอกสาร</button>
-            <p class="text-xs text-gray-500 mt-4">ติดต่อสอบถาม : งานทะเบียน อรว.นม. โทร 044-214935</p>
+            <p class="text-xs text-gray-500 mt-4">ติดต่อสอบถาม : งานทะเบียน อรว.นม. โทร 044-358428</p>
           </div>
         </form>
       </div>
@@ -335,10 +348,7 @@
 
   <script>
     const supabaseUrl = 'https://mpnbvhvtqyfirwfhcixx.supabase.co';
-    
-    // 👇 วางคีย์ Publishable Key ของคุณครูตรงนี้ครับ 👇
     const supabaseKey = 'sb_publishable_eFpCdhORdbRovhLzJeBVUQ_eQa1Wjuq'; 
-    
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
     let globalAdminData = []; 
@@ -362,13 +372,23 @@
       }
     });
 
+    // 🌟 ปรับปรุง: เพิ่มข้อมูลข้อกำหนดเอกสารศิษย์เก่าในป๊อปอัปคำแนะนำหลัก 🌟
     function showInstructions() {
       Swal.fire({
         title: 'คำแนะนำการยื่นคำร้อง',
-        imageUrl: 'https://i.postimg.cc/VN6PDbrw/intro.png',
-        imageWidth: '100%',
-        imageAlt: 'คู่มือการขอเอกสาร',
-        confirmButtonText: 'รับทราบ',
+        html: `
+          <img src="https://i.postimg.cc/VN6PDbrw/intro.png" class="w-full mb-4 rounded-lg shadow">
+          <div class="text-left text-sm bg-red-50 border-l-4 border-red-700 p-3 rounded text-gray-700 space-y-2">
+            <p class="font-bold text-red-800"><i class="fas fa-graduation-cap"></i> สำหรับศิษย์เก่า (กรณีจบการศึกษาแล้ว):</p>
+            <p class="pl-2"><strong>1. ใบแจ้งความ:</strong> ต้องอัปโหลดเข้าระบบ <span class="text-red-600 font-bold">(บังคับเฉพาะกรณีขอ ปพ.1)</span></p>
+            <p class="pl-2"><strong>2. รูปถ่ายจำนวน 2 รูป:</strong> สวมเสื้อเชิ้ตสีขาวสุภาพ ไม่มีตราสัญลักษณ์ใดๆ <span class="text-red-600 font-bold">(ให้นำมาส่งให้งานทะเบียนในวันรับเอกสาร)</span></p>
+            <ul class="list-disc pl-8 space-y-1 text-gray-600 text-[13px]">
+              <li>จบการศึกษาตั้งแต่ปี <strong>พ.ศ. 2548 - ปัจจุบัน</strong> : ใช้รูปขนาด <strong>1.5 นิ้ว</strong></li>
+              <li>จบการศึกษา **ก่อนปี พ.ศ. 2548** : ใช้รูปขนาด <strong>2 นิ้ว</strong></li>
+            </ul>
+          </div>
+        `,
+        confirmButtonText: 'รับทราบข้อกำหนด',
         confirmButtonColor: '#a51c1c',
         customClass: { popup: 'rounded-2xl max-w-2xl w-full' }
       });
@@ -449,12 +469,12 @@
         if(isChecked) { 
           input.classList.remove('hidden'); 
           input.required = true; 
-          fileInput.required = true; // ล็อกชั้นที่ 1: บังคับด้วย HTML ทันทีที่ติ๊ก
+          fileInput.required = true; // ล็อกชั้นที่ 1: บังคับแบบ HTML ทันทีเมื่อกดยื่น ปพ.1
         } else { 
           input.classList.add('hidden'); 
           input.required = false; 
           input.value = ''; 
-          fileInput.required = false; // ปลดล็อกถ้าไม่ได้ติ๊ก
+          fileInput.required = false; // ปลดล็อก HTML ออกเมื่อยกเลิกเลือก ปพ.1
         }
       } else {
         const isChecked = document.getElementById('checkAlumniDocOther').checked;
@@ -549,9 +569,9 @@
           
           fileToUpload = document.getElementById('alumniReportFile').files[0];
 
-          // ล็อกชั้นที่ 2: ดักจับด้วย JavaScript
+          // ล็อกชั้นที่ 2 (JavaScript): บล็อกระบบตรวจเช็คไฟล์ปพ.1 ของศิษย์เก่าซ้ำแบบหนาแน่น
           if (document.getElementById('checkAlumniDoc1').checked && !fileToUpload) {
-            Swal.fire('ข้อมูลไม่สมบูรณ์', 'กรณีขอระเบียนแสดงผลการเรียน (ปพ.1) กรุณาแนบไฟล์ใบแจ้งความด้วยครับ', 'warning');
+            Swal.fire('ข้อมูลไม่สมบูรณ์', 'กรณีขอระเบียนแสดงผลการเรียน (ปพ.1) ศิษย์เก่าจำเป็นต้องแนบไฟล์ใบแจ้งความในระบบด้วยครับ', 'warning');
             return;
           }
       }
