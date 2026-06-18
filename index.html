@@ -333,7 +333,8 @@
     // 👇 นำ Publishable Key มาวางในเครื่องหมายคำพูดเดี่ยวด้านล่างนี้ครับ 👇
     const supabaseKey = 'YOUR_PUBLISHABLE_KEY_HERE'; 
     
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    // ⚠️ แก้ชื่อตัวแปรเป็น supabaseClient ป้องกันการตั้งชื่อชนไลบรารี
+    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
     let globalAdminData = []; 
     let statusPieChart = null;
@@ -536,7 +537,7 @@
 
       Swal.fire({ title: 'กำลังบันทึกข้อมูล...', didOpen: () => { Swal.showLoading(); }});
       
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('document_requests')
         .insert([
           {
@@ -580,7 +581,7 @@
       if(!citizenId) return Swal.fire('แจ้งเตือน', 'กรุณากรอกเลขบัตรประชาชน', 'warning');
       Swal.fire({ title: 'กำลังค้นหา...', didOpen: () => { Swal.showLoading(); }});
       
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('document_requests')
         .select('*')
         .eq('citizen_id', citizenId)
@@ -613,7 +614,7 @@
     }
     
     async function loadAdminData() {
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('document_requests')
         .select('*')
         .order('created_at', { ascending: false });
@@ -714,7 +715,7 @@
     async function updateDocStatus(id, newStatus) {
       Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => { Swal.showLoading(); }});
       
-      const { data, error } = await supabase
+      const { data, error } = await supabaseClient
         .from('document_requests')
         .update({ doc_status: newStatus })
         .eq('id', id);
