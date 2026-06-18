@@ -224,7 +224,7 @@
                   </select>
                 </div>
                 <div class="md:col-span-2">
-                  <label class="block mb-1 text-gray-700">ใบแจ้งความ (กรณีสูญหาย)</label>
+                  <label class="block mb-1 text-gray-700">ใบแจ้งความ <span class="text-red-500 font-medium">(บังคับแนบกรณีขอ ปพ.1)</span></label>
                   <input type="file" id="alumniReportFile" class="input-field bg-white" accept="image/*,.pdf">
                   <span class="text-xs text-red-500 mt-1 block">* ขนาดไฟล์แนบต้องไม่เกิน 2 MB</span>
                 </div>
@@ -336,8 +336,8 @@
   <script>
     const supabaseUrl = 'https://mpnbvhvtqyfirwfhcixx.supabase.co';
     
-    // 👇 วางคีย์ Publishable Key ของคุณครูตรงนี้ครับ
-    const supabaseKey = 'sb_publishable_eFpCdhORdbRovhLzJeBVUQ_eQa1Wjuq'; 
+    // 👇 วางคีย์ Publishable Key ของคุณครูตรงนี้ครับ 👇
+    const supabaseKey = 'YOUR_PUBLISHABLE_KEY_HERE'; 
     
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
@@ -537,6 +537,12 @@
           if (formData.get('checkAlumniDocOther')) docsList.push("อื่นๆ: " + (formData.get('otherAlumniDocName') || "-") + " (" + (formData.get('qtyAlumniDocOther') || "0") + " ฉบับ)");
           
           fileToUpload = document.getElementById('alumniReportFile').files[0];
+
+          // ⚠️ ระบบบังคับแนบไฟล์ ปพ.1 สำหรับศิษย์เก่า
+          if (document.getElementById('checkAlumniDoc1').checked && !fileToUpload) {
+            Swal.fire('ข้อมูลไม่สมบูรณ์', 'กรณีขอระเบียนแสดงผลการเรียน (ปพ.1) กรุณาแนบไฟล์ใบแจ้งความด้วยครับ', 'warning');
+            return;
+          }
       }
       
       if(docsList.length === 0) { Swal.fire('แจ้งเตือน', 'กรุณาเลือกเอกสารที่ต้องการอย่างน้อย 1 รายการ', 'warning'); return; }
@@ -678,7 +684,7 @@
         return {
           id: item.id,
           date: formattedDate,
-          citizenId: item.citizen_id || "-", // รับค่า เลข ปชช. เพิ่มเข้ามา
+          citizenId: item.citizen_id || "-",
           studentStatus: item.student_status, 
           studentId: item.student_id && item.student_id !== "-" ? item.student_id : "-",
           room: displayRoom,
@@ -727,7 +733,6 @@
 
     function renderAdminTable(data) {
       const tbody = document.getElementById('adminTableBody');
-      // ปรับเป็น 9 คอลัมน์
       tbody.innerHTML = (data.length === 0) ? '<tr><td colspan="9" class="text-center py-10 text-gray-400">--- ไม่พบข้อมูลคำร้อง ---</td></tr>' : '';
       data.forEach(item => {
         let tr = document.createElement('tr'); tr.className = "border-b hover:bg-red-50 transition";
