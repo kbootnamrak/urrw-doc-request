@@ -219,7 +219,7 @@
                     <option value="มัธยมศึกษาปีที่ 6">มัธยมศึกษาปีที่ 6</option>
                   </select>
                 </div>
-                <div class="md:col-span-2"><label class="block mb-1 text-gray-700">ใบแจ้งความ (กรณีสูญหาย)</label><input type="file" class="input-field bg-white"></div>
+                <div class="md:col-span-2"><label class="block mb-1 text-gray-700">ใบแจ้งความ (กรณีสูญหาย)</label><input type="file" id="alumniReportFile" class="input-field bg-white"></div>
               </div>
             </div>
           </div>
@@ -325,11 +325,11 @@
   </footer>
 
   <script>
-    // ==========================================
-    // กำหนดค่า Supabase ที่นี่
-    // ==========================================
-	const supabaseUrl = 'https://mpnbvhvtqyfirwfhcixx.supabase.co';
+    const supabaseUrl = 'https://mpnbvhvtqyfirwfhcixx.supabase.co';
+    
+    // 👇 วางคีย์ Publishable Key ของคุณครูตรงนี้ครับ
     const supabaseKey = 'sb_publishable_eFpCdhORdbRovhLzJeBVUQ_eQa1Wjuq'; 
+    
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
     let globalAdminData = []; 
@@ -483,9 +483,9 @@
       }
 
       const status = formData.get('studentStatus');
-      
       let docsList = [];
       let citizenId = "-", prefix = "-", firstName = "-", lastName = "-", bDay = "-", bMonth = "-", bYear = "-", studentId = "-", room = "-", oldSchool = "-", fatherName = "-", motherName = "-", gradYear = "-", gradLevel = "-", finalReason = "-";
+      let fileToUpload = null;
 
       if (status === 'นักเรียนปัจจุบัน') {
           citizenId = formData.get('citizenId') || "-";
@@ -509,6 +509,10 @@
           if (formData.get('checkDoc1_5')) docsList.push("ปพ.1 5 ภาคเรียน (" + (formData.get('qtyDoc1_5') || "0") + " ฉบับ)");
           if (formData.get('checkDoc7')) docsList.push("ปพ.7 (" + (formData.get('qtyDoc7') || "0") + " ฉบับ)");
           if (formData.get('checkDocOther')) docsList.push("อื่นๆ: " + (formData.get('otherDocName') || "-") + " (" + (formData.get('qtyDocOther') || "0") + " ฉบับ)");
+          
+          if (document.getElementById('checkDocOther').checked) {
+            fileToUpload = document.getElementById('otherDocFile').files[0];
+          }
       } else if (status === 'ศิษย์เก่า') {
           citizenId = formData.get('citizenIdAlumni') || "-";
           prefix = formData.get('prefixAlumni') || "-";
@@ -522,6 +526,8 @@
 
           if (formData.get('checkAlumniDoc1')) docsList.push("ปพ.1 (" + (formData.get('qtyAlumniDoc1') || "0") + " ฉบับ)");
           if (formData.get('checkAlumniDocOther')) docsList.push("อื่นๆ: " + (formData.get('otherAlumniDocName') || "-") + " (" + (formData.get('qtyAlumniDocOther') || "0") + " ฉบับ)");
+          
+          fileToUpload = document.getElementById('alumniReportFile').files[0];
       }
       
       if(docsList.length === 0) { Swal.fire('แจ้งเตือน', 'กรุณาเลือกเอกสารที่ต้องการอย่างน้อย 1 รายการ', 'warning'); return; }
@@ -531,7 +537,24 @@
       const phone = formData.get('phone') || "-";
       const email = formData.get('email') || "-";
 
-      Swal.fire({ title: 'กำลังบันทึกข้อมูล...', didOpen: () => { Swal.showLoading(); }});
+      Swal.fire({ title: 'กำลังประมวลผลคำร้อง...', didOpen: () => { Swal.showLoading(); }});
+
+      let fileUrl = "-";
+      // ทำกลไกการอัปโหลดไฟล์เข้า Storage
+      if (fileToUpload) {
+        const fileExt = fileToUpload.name.split('.').pop();
+        const fileName = `${Date.now()}_${Math.floor(Math.random() * 1000)}.${fileExt}`;
+        const { data: uploadData, error: uploadError } = await supabaseClient.storage
+          .from('school-documents')
+          .upload(fileName, fileToUpload);
+        
+        if (uploadError) {
+          Swal.fire('ผิดพลาด', 'อัปโหลดไฟล์แนบไม่สำเร็จ: ' + uploadError.message, 'error');
+          return;
+        }
+        const { data: urlData } = supabaseClient.storage.from('school-documents').getPublicUrl(fileName);
+        fileUrl = urlData.publicUrl;
+      }
       
       const { data, error } = await supabaseClient
         .from('document_requests')
@@ -557,6 +580,7 @@
             pickup_date: pickupDate,
             phone: phone,
             email: email,
+            file_url: fileUrl,
             doc_status: 'กำลังดำเนินการ'
           }
         ]);
@@ -637,11 +661,13 @@
         return {
           id: item.id,
           date: formattedDate,
-          studentId: item.student_id && item.student_id !== "-" ? item.student_id : "ศิษย์เก่า",
+          studentStatus: item.student_status, // ดึงสถานะปัจจุบัน/ศิษย์เก่า
+          studentId: item.student_id && item.student_id !== "-" ? item.student_id : "-",
           room: displayRoom,
           name: item.first_name + " " + item.last_name,
           phone: item.phone && item.phone !== "-" ? item.phone : "-",
           docType: item.requested_docs,
+          fileUrl: item.file_url || "-", // รับค่า URL ลิงก์ไฟล์แนบ
           status: item.doc_status || "กำลังดำเนินการ"
         };
       });
@@ -686,13 +712,26 @@
       tbody.innerHTML = (data.length === 0) ? '<tr><td colspan="8" class="text-center py-10 text-gray-400">--- ไม่พบข้อมูลคำร้อง ---</td></tr>' : '';
       data.forEach(item => {
         let tr = document.createElement('tr'); tr.className = "border-b hover:bg-red-50 transition";
+        
+        // ตรวจสอบและสร้างการแสดงผลสำหรับคอลัมน์รหัสนักเรียน (แก้ไขเรื่องศิษย์เก่าไม่ขึ้น)
+        let idColumnHtml = item.studentId;
+        if (item.studentStatus === 'ศิษย์เก่า') {
+          idColumnHtml = `<span class="px-2 py-0.5 bg-gray-100 text-gray-700 border border-gray-300 rounded text-[11px] font-bold">ศิษย์เก่า</span>`;
+        }
+
+        // เพิ่มการเรียกดูไฟล์แนบถ้านักเรียนอัปโหลดมา
+        let fileBtnHtml = '';
+        if (item.fileUrl && item.fileUrl !== "-") {
+          fileBtnHtml = `<br><a href="${item.fileUrl}" target="_blank" class="inline-block mt-1 text-blue-600 hover:text-blue-800 hover:underline font-bold text-[11px]"><i class="fas fa-paperclip"></i> เปิดดูไฟล์แนบ</a>`;
+        }
+
         tr.innerHTML = `
           <td class="px-4 py-3 border-r text-xs">${item.date}</td>
-          <td class="px-4 py-3 border-r font-bold text-gray-700 text-center">${item.studentId}</td>
+          <td class="px-4 py-3 border-r text-center">${idColumnHtml}</td>
           <td class="px-4 py-3 border-r text-center">${item.room}</td>
           <td class="px-4 py-3 border-r font-medium">${item.name}</td>
           <td class="px-4 py-3 border-r text-center text-blue-600 font-medium whitespace-nowrap"><a href="tel:${item.phone}">${item.phone}</a></td>
-          <td class="px-4 py-3 border-r whitespace-pre-line text-[11px] leading-tight text-red-900">${item.docType}</td>
+          <td class="px-4 py-3 border-r whitespace-pre-line text-[11px] leading-tight text-red-900">${item.docType}${fileBtnHtml}</td>
           <td class="px-4 py-3 border-r text-center font-bold ${item.status === 'เสร็จสิ้น/รับเอกสารแล้ว' ? 'text-green-600' : (item.status === 'กำลังดำเนินการ' ? 'text-yellow-600' : 'text-red-600')}">${item.status}</td>
           <td class="px-4 py-3 text-center">
             <select onchange="updateDocStatus(${item.id}, this.value)" class="border-2 border-school-gold rounded p-1 text-xs bg-white outline-none">
