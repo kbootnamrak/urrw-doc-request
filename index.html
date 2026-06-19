@@ -266,11 +266,15 @@
         <div class="max-w-md mx-auto space-y-4">
           <div><label class="block text-sm text-gray-700 mb-1">กรอกเลขประจำตัวประชาชน (13 หลัก)</label><input type="text" id="searchCitizenId" maxlength="13" class="input-field focus:border-school-red"></div>
           <button onclick="checkStatus()" class="w-full btn-school py-2.5 rounded-md shadow flex justify-center items-center gap-2"><i class="fas fa-search"></i> ตรวจสอบสถานะ</button>
-          <div id="statusResult" class="hidden mt-6 p-6 border-2 border-school-gold rounded-xl bg-red-50 text-center">
+          <div id="statusResult" class="hidden mt-6 p-6 border-2 border-school-gold rounded-xl bg-red-50 text-center flex flex-col items-center">
             <h3 class="font-bold text-gray-800 mb-2">ผลการค้นหา</h3>
             <p class="text-sm text-gray-600">ชื่อ: <span id="resName" class="font-bold text-gray-800"></span></p>
             <p class="text-sm text-gray-600 mt-1">เอกสาร: <span id="resDoc" class="font-bold text-school-red whitespace-pre-line"></span></p>
-            <div class="mt-4 p-3 rounded-lg font-bold text-lg text-white shadow-md" id="resBadge"></div>
+            <div class="mt-4 p-3 w-full max-w-[200px] rounded-lg font-bold text-lg text-white shadow-md" id="resBadge"></div>
+            <div id="resNoteBox" class="hidden w-full mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg text-left shadow-sm">
+              <p class="text-orange-800 font-bold text-sm mb-1"><i class="fas fa-bullhorn"></i> ข้อความจากงานทะเบียน:</p>
+              <p id="resNoteText" class="text-sm text-gray-700 whitespace-pre-line"></p>
+            </div>
           </div>
         </div>
       </div>
@@ -308,7 +312,6 @@
               <div class="w-full max-w-[280px]"><canvas id="docChart"></canvas></div>
             </div>
           </div>
-
         </div>
 
         <div id="adminManageTab" class="hidden">
@@ -329,6 +332,7 @@
               <thead class="bg-red-50 text-school-red border-b-2 border-school-gold">
                 <tr>
                   <th class="px-4 py-3 border-r text-center">วันที่ขอ</th>
+                  <th class="px-4 py-3 border-r text-center">วันรับเอกสาร</th>
                   <th class="px-4 py-3 border-r text-center">เลข ปชช.</th>
                   <th class="px-4 py-3 border-r text-center">รหัสนักเรียน</th>
                   <th class="px-4 py-3 border-r text-center">ระดับชั้น</th>
@@ -364,7 +368,7 @@
 
     let globalAdminData = []; 
     let statusPieChart = null;
-    let docPieChart = null; // 🌟 เพิ่มตัวแปรสำหรับกราฟใหม่
+    let docPieChart = null; 
 
     document.addEventListener('DOMContentLoaded', function() {
       showInstructions();
@@ -406,7 +410,7 @@
               <ul class="list-disc pl-5 mt-1 text-[13px] text-gray-800 font-medium">
                 <li><strong class="text-red-600">ใบแจ้งความ:</strong> ต้องถ่ายรูป/สแกนแนบในระบบ (กรณีขอ ปพ.1)</li>
                 <li><strong class="text-red-600">รูปถ่าย 2 รูป:</strong> สวมเสื้อเชิ้ตขาว ไม่มีตราสัญลักษณ์ (นำมาส่งวันรับเอกสาร)</li>
-                <li><strong class="text-red-600">ก่อนมารับเอกสาร:</strong> โปรดตรวจสอบถานะในระบบหรือโทรสอบถามก่อน</li>
+				<li><strong class="text-red-600">ก่อนมารับเอกสาร:</strong> โปรดตรวจสอบถานะในระบบหรือโทรสอบถามก่อน</li>
               </ul>
               <div class="pl-5 mt-2 text-xs text-gray-600 bg-white p-2 rounded border border-amber-200">
                 <p class="mb-1"><i class="fas fa-caret-right text-amber-500"></i> จบปี พ.ศ. 2548 - ปัจจุบัน : ใช้รูปขนาด <strong class="text-gray-800">1.5 นิ้ว</strong></p>
@@ -418,7 +422,7 @@
               <p class="font-bold text-green-800 flex items-center gap-1"><i class="fas fa-hand-holding-box"></i> วันรับเอกสาร (ณ งานทะเบียน):</p>
               <ul class="list-disc pl-5 mt-1 text-[13px] text-gray-600">
                 <li>เตรียมบัตรประชาชนตัวจริงมาแสดงเพื่อรับเอกสาร</li>
-                <li>ติดขัดปัญหา โทรสอบถาม: <strong class="text-green-700">044-214935 ต่อ 104</strong></li>
+                <li>ติดขัดปัญหา โทรสอบถาม: <strong class="text-green-700">044-214935 ต่อ 104 </strong></li>
               </ul>
             </div>
           </div>
@@ -697,6 +701,9 @@
 
       Swal.close();
       const resultDiv = document.getElementById('statusResult');
+      const noteBox = document.getElementById('resNoteBox');
+      const noteText = document.getElementById('resNoteText');
+
       if(data && data.length > 0) {
         const item = data[0];
         document.getElementById('resName').innerText = item.first_name + ' ' + item.last_name;
@@ -704,9 +711,21 @@
         const badge = document.getElementById('resBadge');
         badge.innerText = item.doc_status;
         badge.style.backgroundColor = (item.doc_status === 'เสร็จสิ้น/รับเอกสารแล้ว') ? '#16a34a' : (item.doc_status === 'กำลังดำเนินการ' ? '#ca8a04' : '#dc2626');
+        
+        // 🌟 แสดงข้อความจากแอดมินถ้ามี 🌟
+        if (item.admin_note && (item.doc_status === 'ขอเอกสารเพิ่ม' || item.doc_status === 'ติดต่องานทะเบียน')) {
+          noteText.innerText = item.admin_note;
+          noteBox.classList.remove('hidden');
+        } else {
+          noteBox.classList.add('hidden');
+          noteText.innerText = '';
+        }
+
         resultDiv.classList.remove('hidden');
       } else { 
-        resultDiv.classList.add('hidden'); Swal.fire('ไม่พบข้อมูล', 'ไม่พบคำร้องที่ตรงกับเลขบัตรประชาชนนี้', 'info'); 
+        resultDiv.classList.add('hidden'); 
+        noteBox.classList.add('hidden');
+        Swal.fire('ไม่พบข้อมูล', 'ไม่พบคำร้องที่ตรงกับเลขบัตรประชาชนนี้', 'info'); 
       }
     }
     
@@ -748,6 +767,7 @@
         return {
           id: item.id,
           date: formattedDate,
+          pickupDate: item.pickup_date || "-", // 🌟 ดึงข้อมูลวันรับเอกสาร
           citizenId: item.citizen_id || "-",
           studentStatus: item.student_status, 
           studentId: item.student_id && item.student_id !== "-" ? item.student_id : "-",
@@ -756,7 +776,8 @@
           phone: item.phone && item.phone !== "-" ? item.phone : "-",
           docType: item.requested_docs,
           fileUrl: item.file_url || "-", 
-          status: item.doc_status || "กำลังดำเนินการ"
+          status: item.doc_status || "กำลังดำเนินการ",
+          adminNote: item.admin_note || "" // 🌟 ดึงข้อความแอดมินมาแสดงเผื่อเตือนความจำ
         };
       });
 
@@ -776,7 +797,6 @@
         <div class="bg-green-50 border-2 border-school-gold rounded-xl p-4 text-center"><div class="text-green-800 font-bold text-sm">เสร็จสิ้น</div><div class="text-3xl font-black text-green-600">${success}</div></div>
       `;
 
-      // 🌟 สร้างกราฟสถานะการดำเนินงาน (ฝั่งซ้าย) 🌟
       const ctx = document.getElementById('statusChart').getContext('2d');
       if (statusPieChart) statusPieChart.destroy();
       statusPieChart = new Chart(ctx, {
@@ -788,7 +808,6 @@
         options: { plugins: { legend: { position: 'bottom', labels: { font: { family: 'Sarabun', weight: 'bold' } } } } }
       });
 
-      // 🌟 สร้างกราฟประเภทเอกสารที่ขอ (ฝั่งขวา) 🌟
       let docCounts = { 'ปพ.1': 0, 'ปพ.1 (4 ภาคเรียน)': 0, 'ปพ.1 (5 ภาคเรียน)': 0, 'ปพ.7': 0, 'อื่นๆ': 0 };
       
       globalAdminData.forEach(item => {
@@ -842,7 +861,7 @@
 
     function renderAdminTable(data) {
       const tbody = document.getElementById('adminTableBody');
-      tbody.innerHTML = (data.length === 0) ? '<tr><td colspan="9" class="text-center py-10 text-gray-400">--- ไม่พบข้อมูลคำร้อง ---</td></tr>' : '';
+      tbody.innerHTML = (data.length === 0) ? '<tr><td colspan="10" class="text-center py-10 text-gray-400">--- ไม่พบข้อมูลคำร้อง ---</td></tr>' : '';
       data.forEach(item => {
         let tr = document.createElement('tr'); tr.className = "border-b hover:bg-red-50 transition";
         
@@ -856,15 +875,23 @@
           fileBtnHtml = `<br><a href="${item.fileUrl}" target="_blank" class="inline-block mt-1 text-blue-600 hover:text-blue-800 hover:underline font-bold text-[11px]"><i class="fas fa-paperclip"></i> เปิดดูไฟล์แนบ</a>`;
         }
 
+        // 🌟 แสดงบันทึกแอดมินในตาราง (ถ้ามี) 🌟
+        let adminNoteHtml = '';
+        if (item.adminNote && (item.status === 'ขอเอกสารเพิ่ม' || item.status === 'ติดต่องานทะเบียน')) {
+          adminNoteHtml = `<div class="mt-1 text-[10px] text-red-600 italic">" ${item.adminNote} "</div>`;
+        }
+
+        // 🌟 เพิ่มคอลัมน์ วันรับเอกสาร 🌟
         tr.innerHTML = `
           <td class="px-4 py-3 border-r text-xs text-center">${item.date}</td>
+          <td class="px-4 py-3 border-r text-xs text-center text-blue-700 font-bold bg-blue-50">${item.pickupDate}</td>
           <td class="px-4 py-3 border-r font-medium text-gray-700 text-center">${item.citizenId}</td>
           <td class="px-4 py-3 border-r text-center">${idColumnHtml}</td>
           <td class="px-4 py-3 border-r text-center text-xs">${item.room}</td>
           <td class="px-4 py-3 border-r font-medium">${item.name}</td>
           <td class="px-4 py-3 border-r text-center text-blue-600 font-medium whitespace-nowrap"><a href="tel:${item.phone}">${item.phone}</a></td>
           <td class="px-4 py-3 border-r whitespace-pre-line text-[11px] leading-tight text-red-900">${item.docType}${fileBtnHtml}</td>
-          <td class="px-4 py-3 border-r text-center font-bold ${item.status === 'เสร็จสิ้น/รับเอกสารแล้ว' ? 'text-green-600' : (item.status === 'กำลังดำเนินการ' ? 'text-yellow-600' : 'text-red-600')}">${item.status}</td>
+          <td class="px-4 py-3 border-r text-center font-bold ${item.status === 'เสร็จสิ้น/รับเอกสารแล้ว' ? 'text-green-600' : (item.status === 'กำลังดำเนินการ' ? 'text-yellow-600' : 'text-red-600')}">${item.status}${adminNoteHtml}</td>
           <td class="px-4 py-3 text-center">
             <select onchange="updateDocStatus(${item.id}, this.value)" class="border-2 border-school-gold rounded p-1 text-xs bg-white outline-none">
               <option value="" disabled selected>เปลี่ยนสถานะ</option>
@@ -879,12 +906,45 @@
       });
     }
     
+    // 🌟 อัปเดตฟังก์ชันเพื่อเปิดกล่องข้อความเมื่อนายทะเบียนต้องการขอเอกสารเพิ่ม 🌟
     async function updateDocStatus(id, newStatus) {
+      let note = "";
+      
+      // ดักจับสถานะที่ต้องมีการส่งข้อความ
+      if (newStatus === 'ขอเอกสารเพิ่ม' || newStatus === 'ติดต่องานทะเบียน') {
+        const { value: text, isDismissed } = await Swal.fire({
+          title: 'ระบุข้อความถึงผู้ยื่นคำร้อง',
+          input: 'textarea',
+          inputPlaceholder: 'เช่น กรุณาแนบไฟล์รูปถ่ายใหม่ เนื่องจากรูปไม่ชัดเจน...',
+          showCancelButton: true,
+          confirmButtonText: 'บันทึกสถานะ',
+          cancelButtonText: 'ยกเลิก',
+          confirmButtonColor: '#a51c1c',
+          customClass: { input: 'text-sm' }
+        });
+
+        if (isDismissed) {
+          // ถ้ายกเลิก ให้โหลดตารางใหม่เพื่อรีเซ็ตปุ่ม Dropdown กลับค่าเดิม
+          loadAdminData(); 
+          return;
+        }
+        note = text || "";
+      }
+
       Swal.fire({ title: 'กำลังบันทึก...', didOpen: () => { Swal.showLoading(); }});
       
+      const updateData = { doc_status: newStatus };
+      
+      // อัปเดตข้อมูล admin_note ลงฐานข้อมูลด้วย
+      if (newStatus === 'ขอเอกสารเพิ่ม' || newStatus === 'ติดต่องานทะเบียน') {
+         updateData.admin_note = note;
+      } else {
+         updateData.admin_note = null; // ถ้าเปลี่ยนกลับเป็นปกติ ให้ล้างข้อความทิ้ง
+      }
+
       const { data, error } = await supabaseClient
         .from('document_requests')
-        .update({ doc_status: newStatus })
+        .update(updateData)
         .eq('id', id);
 
       if (error) {
