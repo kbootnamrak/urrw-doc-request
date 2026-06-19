@@ -143,8 +143,8 @@
                 <li><strong>ใบแจ้งความ (กรณีสูญหาย):</strong> ต้องทำการถ่ายรูปหรือสแกนไฟล์เพื่ออัปโหลดเข้าสู่ระบบในช่องด้านล่าง <span class="text-red-600 font-bold">(ระบบจะบังคับแนบไฟล์ทันทีในกรณีที่ขอ ปพ.1)</span></li>
                 <li><strong>รูปถ่ายหน้าตรงจำนวน 2 รูป:</strong> สวมเสื้อเชิ้ตสีขาวสุภาพ ไม่มีตราสัญลักษณ์หรือเครื่องหมายใดๆ <span class="text-red-600 font-bold">(ให้นำมาส่งให้เจ้าหน้าที่งานทะเบียนในวันที่มารับเอกสารจริง)</span>
                   <ul class="list-disc pl-5 mt-1 space-y-1 text-gray-700">
-                    <li>ศิษย์เก่าที่จบการศึกษาตั้งแต่ปี <strong>**พ.ศ. 2548 - ปัจจุบัน**</strong> : ให้ใช้รูปถ่ายขนาด <strong>1.5 นิ้ว</strong></li>
-                    <li>ศิษย์เก่าที่จบการศึกษา <strong>**ก่อนปี พ.ศ. 2548**</strong>  : ให้ใช้รูปถ่ายขนาด <strong>2 นิ้ว</strong></li>
+                    <li>ศิษย์เก่าที่จบการศึกษาตั้งแต่ปี <strong>พ.ศ. 2548 - ปัจจุบัน</strong> : ให้ใช้รูปถ่ายขนาด <strong>1.5 นิ้ว</strong></li>
+                    <li>ศิษย์เก่าที่จบการศึกษา **ก่อนปี พ.ศ. 2548** : ให้ใช้รูปถ่ายขนาด <strong>2 นิ้ว</strong></li>
                   </ul>
                 </li>
               </ol>
@@ -297,10 +297,18 @@
         <div id="adminSummaryTab">
           <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="summaryCardsContainer"></div>
           
-          <div class="mt-8 max-w-sm mx-auto bg-white p-6 border-2 border-school-gold rounded-2xl shadow-md">
-            <h3 class="text-center font-bold text-gray-800 mb-4">สัดส่วนสถานะการดำเนินงาน</h3>
-            <canvas id="statusChart"></canvas>
+          <div class="mt-8 max-w-4xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white p-6 border-2 border-school-gold rounded-2xl shadow-md flex flex-col justify-center items-center">
+              <h3 class="text-center font-bold text-gray-800 mb-4 w-full border-b pb-2">สัดส่วนสถานะการดำเนินงาน</h3>
+              <div class="w-full max-w-[280px]"><canvas id="statusChart"></canvas></div>
+            </div>
+            
+            <div class="bg-white p-6 border-2 border-school-gold rounded-2xl shadow-md flex flex-col justify-center items-center">
+              <h3 class="text-center font-bold text-gray-800 mb-4 w-full border-b pb-2">สัดส่วนประเภทเอกสารที่ขอ</h3>
+              <div class="w-full max-w-[280px]"><canvas id="docChart"></canvas></div>
+            </div>
           </div>
+
         </div>
 
         <div id="adminManageTab" class="hidden">
@@ -348,11 +356,15 @@
 
   <script>
     const supabaseUrl = 'https://mpnbvhvtqyfirwfhcixx.supabase.co';
-    const supabaseKey = 'sb_publishable_eFpCdhORdbRovhLzJeBVUQ_eQa1Wjuq'; 
+    
+    // 👇 วางคีย์ Publishable Key ของคุณครูตรงนี้ครับ 👇
+    const supabaseKey = 'YOUR_PUBLISHABLE_KEY_HERE'; 
+    
     const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 
     let globalAdminData = []; 
     let statusPieChart = null;
+    let docPieChart = null; // 🌟 เพิ่มตัวแปรสำหรับกราฟใหม่
 
     document.addEventListener('DOMContentLoaded', function() {
       showInstructions();
@@ -372,7 +384,6 @@
       }
     });
 
-    // 🌟 เปลี่ยนป๊อปอัปคำแนะนำเป็นการเขียนด้วยโค้ด HTML เพื่อให้โหลดโลโก้จริงและจัดหน้าตาสวยงาม 🌟
     function showInstructions() {
       Swal.fire({
         title: 'คำแนะนำการยื่นคำร้อง',
@@ -764,6 +775,7 @@
         <div class="bg-green-50 border-2 border-school-gold rounded-xl p-4 text-center"><div class="text-green-800 font-bold text-sm">เสร็จสิ้น</div><div class="text-3xl font-black text-green-600">${success}</div></div>
       `;
 
+      // 🌟 สร้างกราฟสถานะการดำเนินงาน (ฝั่งซ้าย) 🌟
       const ctx = document.getElementById('statusChart').getContext('2d');
       if (statusPieChart) statusPieChart.destroy();
       statusPieChart = new Chart(ctx, {
@@ -771,6 +783,50 @@
         data: {
           labels: ['รอดำเนินการ', 'มีปัญหา/แก้ไข', 'เสร็จสิ้น'],
           datasets: [{ data: [pending, warning, success], backgroundColor: ['#ca8a04', '#dc2626', '#16a34a'], borderWidth: 2, borderColor: '#fff' }]
+        },
+        options: { plugins: { legend: { position: 'bottom', labels: { font: { family: 'Sarabun', weight: 'bold' } } } } }
+      });
+
+      // 🌟 สร้างกราฟประเภทเอกสารที่ขอ (ฝั่งขวา) 🌟
+      let docCounts = { 'ปพ.1': 0, 'ปพ.1 (4 ภาคเรียน)': 0, 'ปพ.1 (5 ภาคเรียน)': 0, 'ปพ.7': 0, 'อื่นๆ': 0 };
+      
+      globalAdminData.forEach(item => {
+        if(!item.docType || item.docType === "-") return;
+        let docs = item.docType.split('\n');
+        docs.forEach(doc => {
+          let d = doc.trim();
+          if(d.includes('ปพ.1 4 ภาคเรียน')) docCounts['ปพ.1 (4 ภาคเรียน)']++;
+          else if(d.includes('ปพ.1 5 ภาคเรียน')) docCounts['ปพ.1 (5 ภาคเรียน)']++;
+          else if(d.startsWith('ปพ.1 (')) docCounts['ปพ.1']++;
+          else if(d.includes('ปพ.7')) docCounts['ปพ.7']++;
+          else if(d.includes('อื่นๆ')) docCounts['อื่นๆ']++;
+        });
+      });
+
+      const docLabels = [];
+      const docData = [];
+      const docColors = ['#2563eb', '#3b82f6', '#60a5fa', '#059669', '#d97706'];
+      const activeColors = [];
+
+      Object.keys(docCounts).forEach((key, index) => {
+         if(docCounts[key] > 0) {
+             docLabels.push(`${key} (${docCounts[key]})`);
+             docData.push(docCounts[key]);
+             activeColors.push(docColors[index]);
+         }
+      });
+
+      const docCtx = document.getElementById('docChart').getContext('2d');
+      if (docPieChart) docPieChart.destroy();
+      docPieChart = new Chart(docCtx, {
+        type: 'doughnut',
+        data: {
+          labels: docLabels.length > 0 ? docLabels : ['ไม่มีข้อมูล'],
+          datasets: [{ 
+              data: docData.length > 0 ? docData : [1], 
+              backgroundColor: docData.length > 0 ? activeColors : ['#e5e7eb'], 
+              borderWidth: 2, borderColor: '#fff' 
+          }]
         },
         options: { plugins: { legend: { position: 'bottom', labels: { font: { family: 'Sarabun', weight: 'bold' } } } } }
       });
