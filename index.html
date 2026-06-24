@@ -729,14 +729,32 @@
       }
     }
     
-    function loginAdmin() {
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    async function loginAdmin() {
       const pass = document.getElementById('adminPassword').value;
-      Swal.fire({ title: 'กำลังตรวจสอบ...', didOpen: () => { Swal.showLoading(); }});
-      if(pass === '979670') { 
-        Swal.close(); document.getElementById('adminPassword').value = ''; 
-        sessionStorage.setItem('adminLoggedIn', 'true');
-        switchView('adminDashboardView'); loadAdminData(); 
-      } else { Swal.fire('ผิดพลาด', 'รหัสผ่านไม่ถูกต้อง', 'error'); }
+      if (!pass) return;
+      Swal.fire({ title: 'กำลังตรวจสอบ...', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); }});
+      try {
+        const { data, error } = await supabaseClient.from('admin_users').select('id').eq('password', pass);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          Swal.close();
+          document.getElementById('adminPassword').value = '';
+          sessionStorage.setItem('adminLoggedIn', 'true');
+          switchView('adminDashboardView'); loadAdminData();
+        } else {
+          Swal.fire('ผิดพลาด', 'รหัสผ่านไม่ถูกต้อง', 'error');
+        }
+      } catch (err) {
+        Swal.fire('ข้อผิดพลาดระบบ', err.message, 'error');
+      }
     }
     
     async function loadAdminData() {
@@ -791,10 +809,10 @@
       const success = globalAdminData.filter(d => d.status === 'เสร็จสิ้น/รับเอกสารแล้ว').length;
 
       document.getElementById('summaryCardsContainer').innerHTML = `
-        <div class="bg-red-50 border-2 border-school-gold rounded-xl p-4 text-center"><div class="text-red-800 font-bold text-sm">ทั้งหมด</div><div class="text-3xl font-black text-red-700">${total}</div></div>
-        <div class="bg-yellow-50 border-2 border-school-gold rounded-xl p-4 text-center"><div class="text-yellow-800 font-bold text-sm">รอดำเนินการ</div><div class="text-3xl font-black text-yellow-600">${pending}</div></div>
-        <div class="bg-red-100 border-2 border-school-gold rounded-xl p-4 text-center"><div class="text-red-800 font-bold text-sm">มีปัญหา</div><div class="text-3xl font-black text-red-600">${warning}</div></div>
-        <div class="bg-green-50 border-2 border-school-gold rounded-xl p-4 text-center"><div class="text-green-800 font-bold text-sm">เสร็จสิ้น</div><div class="text-3xl font-black text-green-600">${success}</div></div>
+        <div onclick="goToManageTab('all')" class="bg-red-50 border-2 border-school-gold rounded-xl p-4 text-center cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-200"><div class="text-red-800 font-bold text-sm">ทั้งหมด</div><div class="text-3xl font-black text-red-700">${total}</div><div class="text-xs text-red-400 mt-1">คลิกเพื่อดู</div></div>
+        <div onclick="goToManageTab('กำลังดำเนินการ')" class="bg-yellow-50 border-2 border-school-gold rounded-xl p-4 text-center cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-200"><div class="text-yellow-800 font-bold text-sm">รอดำเนินการ</div><div class="text-3xl font-black text-yellow-600">${pending}</div><div class="text-xs text-yellow-400 mt-1">คลิกเพื่อดู</div></div>
+        <div onclick="goToManageTab('ขอเอกสารเพิ่ม')" class="bg-red-100 border-2 border-school-gold rounded-xl p-4 text-center cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-200"><div class="text-red-800 font-bold text-sm">มีปัญหา</div><div class="text-3xl font-black text-red-600">${warning}</div><div class="text-xs text-red-400 mt-1">คลิกเพื่อดู</div></div>
+        <div onclick="goToManageTab('เสร็จสิ้น/รับเอกสารแล้ว')" class="bg-green-50 border-2 border-school-gold rounded-xl p-4 text-center cursor-pointer hover:shadow-lg hover:-translate-y-1 transition-all duration-200"><div class="text-green-800 font-bold text-sm">เสร็จสิ้น</div><div class="text-3xl font-black text-green-600">${success}</div><div class="text-xs text-green-400 mt-1">คลิกเพื่อดู</div></div>
       `;
 
       const ctx = document.getElementById('statusChart').getContext('2d');
@@ -852,6 +870,12 @@
       });
     }
 
+    function goToManageTab(filterValue) {
+      switchAdminTab('manage');
+      document.getElementById('adminFilter').value = filterValue;
+      filterAdminData();
+    }
+
     function filterAdminData() {
       const filter = document.getElementById('adminFilter').value;
       let filtered = (filter === 'all') ? globalAdminData : 
@@ -865,33 +889,34 @@
       data.forEach(item => {
         let tr = document.createElement('tr'); tr.className = "border-b hover:bg-red-50 transition";
         
-        let idColumnHtml = item.studentId;
+        let idColumnHtml = escapeHtml(item.studentId);
         if (item.studentStatus === 'ศิษย์เก่า') {
           idColumnHtml = `<span class="px-2 py-0.5 bg-gray-100 text-gray-700 border border-gray-300 rounded text-[11px] font-bold">ศิษย์เก่า</span>`;
         }
 
         let fileBtnHtml = '';
         if (item.fileUrl && item.fileUrl !== "-") {
-          fileBtnHtml = `<br><a href="${item.fileUrl}" target="_blank" class="inline-block mt-1 text-blue-600 hover:text-blue-800 hover:underline font-bold text-[11px]"><i class="fas fa-paperclip"></i> เปิดดูไฟล์แนบ</a>`;
+          const safeUrl = encodeURI(item.fileUrl);
+          fileBtnHtml = `<br><a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="inline-block mt-1 text-blue-600 hover:text-blue-800 hover:underline font-bold text-[11px]"><i class="fas fa-paperclip"></i> เปิดดูไฟล์แนบ</a>`;
         }
 
-        // 🌟 แสดงบันทึกแอดมินในตาราง (ถ้ามี) 🌟
         let adminNoteHtml = '';
         if (item.adminNote && (item.status === 'ขอเอกสารเพิ่ม' || item.status === 'ติดต่องานทะเบียน')) {
-          adminNoteHtml = `<div class="mt-1 text-[10px] text-red-600 italic">" ${item.adminNote} "</div>`;
+          adminNoteHtml = `<div class="mt-1 text-[10px] text-red-600 italic">" ${escapeHtml(item.adminNote)} "</div>`;
         }
 
-        // 🌟 เพิ่มคอลัมน์ วันรับเอกสาร 🌟
+        const statusColor = item.status === 'เสร็จสิ้น/รับเอกสารแล้ว' ? 'text-green-600' : (item.status === 'กำลังดำเนินการ' ? 'text-yellow-600' : 'text-red-600');
+
         tr.innerHTML = `
-          <td class="px-4 py-3 border-r text-xs text-center">${item.date}</td>
-          <td class="px-4 py-3 border-r text-xs text-center text-blue-700 font-bold bg-blue-50">${item.pickupDate}</td>
-          <td class="px-4 py-3 border-r font-medium text-gray-700 text-center">${item.citizenId}</td>
+          <td class="px-4 py-3 border-r text-xs text-center">${escapeHtml(item.date)}</td>
+          <td class="px-4 py-3 border-r text-xs text-center text-blue-700 font-bold bg-blue-50">${escapeHtml(item.pickupDate)}</td>
+          <td class="px-4 py-3 border-r font-medium text-gray-700 text-center">${escapeHtml(item.citizenId)}</td>
           <td class="px-4 py-3 border-r text-center">${idColumnHtml}</td>
-          <td class="px-4 py-3 border-r text-center text-xs">${item.room}</td>
-          <td class="px-4 py-3 border-r font-medium">${item.name}</td>
-          <td class="px-4 py-3 border-r text-center text-blue-600 font-medium whitespace-nowrap"><a href="tel:${item.phone}">${item.phone}</a></td>
-          <td class="px-4 py-3 border-r whitespace-pre-line text-[11px] leading-tight text-red-900">${item.docType}${fileBtnHtml}</td>
-          <td class="px-4 py-3 border-r text-center font-bold ${item.status === 'เสร็จสิ้น/รับเอกสารแล้ว' ? 'text-green-600' : (item.status === 'กำลังดำเนินการ' ? 'text-yellow-600' : 'text-red-600')}">${item.status}${adminNoteHtml}</td>
+          <td class="px-4 py-3 border-r text-center text-xs">${escapeHtml(item.room)}</td>
+          <td class="px-4 py-3 border-r font-medium">${escapeHtml(item.name)}</td>
+          <td class="px-4 py-3 border-r text-center text-blue-600 font-medium whitespace-nowrap"><a href="tel:${escapeHtml(item.phone)}">${escapeHtml(item.phone)}</a></td>
+          <td class="px-4 py-3 border-r whitespace-pre-line text-[11px] leading-tight text-red-900">${escapeHtml(item.docType)}${fileBtnHtml}</td>
+          <td class="px-4 py-3 border-r text-center font-bold ${statusColor}">${escapeHtml(item.status)}${adminNoteHtml}</td>
           <td class="px-4 py-3 text-center">
             <select onchange="updateDocStatus(${item.id}, this.value)" class="border-2 border-school-gold rounded p-1 text-xs bg-white outline-none">
               <option value="" disabled selected>เปลี่ยนสถานะ</option>
